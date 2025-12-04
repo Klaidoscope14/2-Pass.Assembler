@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <string>
+using namespace std;
 
 const int MAX_LINE = 512;
 const int MAX_TOKEN = 128;
@@ -10,7 +11,7 @@ const int MAX_TOKEN = 128;
 enum OperandKind { OP_NONE, OP_VALUE, OP_OFFSET, OP_ANY };
 
 struct InstrDef {
-    std::string name;
+    string name;
     int opcode;
     OperandKind kind;
     InstrDef() : name(), opcode(-1), kind(OP_NONE) {}

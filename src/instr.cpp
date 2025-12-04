@@ -1,8 +1,9 @@
 #include "instr.hpp"
 #include <vector>
 #include <cstring>
+using namespace std;
 
-static std::vector<InstrDef> instrs;
+static vector<InstrDef> instrs;
 
 void instr_table_init() {
     instrs.clear();
@@ -29,7 +30,7 @@ void instr_table_init() {
     instrs.emplace_back("SET", -2, OP_VALUE);
 }
 
-const InstrDef* lookup_instr(const std::string &mnemonic) {
+const InstrDef* lookup_instr(const string &mnemonic) {
     for (size_t i = 0; i < instrs.size(); ++i) {
         if (instrs[i].name == mnemonic) return &instrs[i];
     }

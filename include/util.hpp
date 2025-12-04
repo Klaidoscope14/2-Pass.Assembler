@@ -4,8 +4,9 @@
 #include <string>
 #include <optional>
 #include <cstdio>
+using namespace std;
 
-std::optional<int> parse_number(const std::string &s);
-void write_word_be(std::FILE *f, unsigned int word);
+optional<int> parse_number(const string &s);
+void write_word_be(FILE *f, unsigned int word);
 
 #endif 

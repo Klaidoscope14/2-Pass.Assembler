@@ -3,8 +3,9 @@
 
 #include "asm.hpp"
 #include <optional>
+using namespace std;
 
 void instr_table_init();
-const InstrDef* lookup_instr(const std::string &mnemonic);
+const InstrDef* lookup_instr(const string &mnemonic);
 
 #endif 

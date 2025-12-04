@@ -10,17 +10,18 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+using namespace std;
 
 struct ListingEntry {
     unsigned addr;
     unsigned word;
-    std::string mnemonic;
-    std::string operand;
+    string mnemonic;
+    string operand;
 };
 
-static std::vector<ListingEntry> listing;
+static vector<ListingEntry> listing;
 
-static void add_listing(unsigned addr, unsigned word, const std::string &mn, const std::string &op) {
+static void add_listing(unsigned addr, unsigned word, const string &mn, const string &op) {
     listing.push_back({addr, word, mn, op});
 }
 
@@ -30,23 +31,23 @@ static int compute_offset_for_branch(int instr_addr, int target_addr) {
 }
 
 /* assemble_file: if emit==false => pass1 (discover labels); if emit==true => emit binary & listing */
-int assemble_file(std::istream &in, std::FILE *obj, bool emit, std::ostream *lst, const std::string &in_name) {
+int assemble_file(istream &in, FILE *obj, bool emit, ostream *lst, const string &in_name) {
     in.clear();
     in.seekg(0);
-    std::string line;
+    string line;
     unsigned pc = 0;
     int lineno = 0;
     int errors = 0;
 
-    while (std::getline(in, line)) {
+    while (getline(in, line)) {
         ++lineno;
-        std::string label, stmt;
+        string label, stmt;
         if (!process_line(line, label, stmt)) continue;
         if (!label.empty()) {
             if (!emit) {
                 bool dup = symtab_insert(label, static_cast<int>(pc), true);
                 if (dup) {
-                    std::cerr << in_name << ":" << lineno << ": error: duplicate label '" << label << "'\n";
+                    cerr << in_name << ":" << lineno << ": error: duplicate label '" << label << "'\n";
                     ++errors;
                 }
             } else {
@@ -56,25 +57,25 @@ int assemble_file(std::istream &in, std::FILE *obj, bool emit, std::ostream *lst
 
         // parse statement
         size_t pos = 0;
-        std::string tok = parse_token(stmt, pos);
+        string tok = parse_token(stmt, pos);
         if (tok.empty()) continue;
         // uppercase mnemonic? spec uses case-insensitive for HALT maybe; keep case-sensitive for mnemonics except SET/HALT? We'll treat as exact except check "SET" as case-insensitive later
         if (tok == "SET" || tok == "set" || tok == "Set") {
-            std::string op = parse_token(stmt, pos);
+            string op = parse_token(stmt, pos);
             if (op.empty()) {
-                std::cerr << in_name << ":" << lineno << ": error: SET missing operand\n";
+                cerr << in_name << ":" << lineno << ": error: SET missing operand\n";
                 ++errors;
             } else {
                 auto val = parse_number(op);
                 if (!val) {
-                    std::cerr << in_name << ":" << lineno << ": error: bad number for SET: " << op << "\n";
+                    cerr << in_name << ":" << lineno << ": error: bad number for SET: " << op << "\n";
                     ++errors;
                 } else {
                     if (!emit) {
                         if (!label.empty()) {
                             symtab_insert(label, *val, true);
                         } else {
-                            std::cerr << in_name << ":" << lineno << ": warning: SET without label ignored\n";
+                            cerr << in_name << ":" << lineno << ": warning: SET without label ignored\n";
                         }
                     }
                 }
@@ -84,21 +85,21 @@ int assemble_file(std::istream &in, std::FILE *obj, bool emit, std::ostream *lst
 
         const InstrDef *instr = lookup_instr(tok);
         if (!instr) {
-            std::cerr << in_name << ":" << lineno << ": error: unknown mnemonic '" << tok << "'\n";
+            cerr << in_name << ":" << lineno << ": error: unknown mnemonic '" << tok << "'\n";
             ++errors;
             continue;
         }
 
-        std::string operand = parse_token(stmt, pos);
-        std::string extra = parse_token(stmt, pos);
+        string operand = parse_token(stmt, pos);
+        string extra = parse_token(stmt, pos);
         if (!extra.empty()) {
-            std::cerr << in_name << ":" << lineno << ": error: extra tokens at end of line\n";
+            cerr << in_name << ":" << lineno << ": error: extra tokens at end of line\n";
             ++errors;
         }
 
         if (instr->kind == OP_NONE) {
             if (!operand.empty()) {
-                std::cerr << in_name << ":" << lineno << ": error: unexpected operand for '" << tok << "'\n";
+                cerr << in_name << ":" << lineno << ": error: unexpected operand for '" << tok << "'\n";
                 ++errors;
             }
             if (emit) {
@@ -109,19 +110,19 @@ int assemble_file(std::istream &in, std::FILE *obj, bool emit, std::ostream *lst
             ++pc;
         } else if (instr->kind == OP_VALUE || instr->kind == OP_ANY || instr->opcode == -1) {
             if (operand.empty()) {
-                std::cerr << in_name << ":" << lineno << ": error: missing operand for '" << tok << "'\n";
+                cerr << in_name << ":" << lineno << ": error: missing operand for '" << tok << "'\n";
                 ++errors;
                 ++pc;
                 continue;
             }
             // label?
-            if (std::isalpha((unsigned char)operand[0]) || operand[0]=='_') {
+            if (isalpha((unsigned char)operand[0]) || operand[0]=='_') {
                 if (!emit) {
                     symtab_ref(operand);
                 } else {
                     auto val_opt = symtab_lookup(operand);
                     if (!val_opt) {
-                        std::cerr << in_name << ":" << lineno << ": error: undefined label '" << operand << "'\n";
+                        cerr << in_name << ":" << lineno << ": error: undefined label '" << operand << "'\n";
                         ++errors;
                         // fallback to zero
                         int val = 0;
@@ -152,7 +153,7 @@ int assemble_file(std::istream &in, std::FILE *obj, bool emit, std::ostream *lst
             } else {
                 auto num_opt = parse_number(operand);
                 if (!num_opt) {
-                    std::cerr << in_name << ":" << lineno << ": error: bad number '" << operand << "'\n";
+                    cerr << in_name << ":" << lineno << ": error: bad number '" << operand << "'\n";
                     ++errors;
                     ++pc;
                     continue;
@@ -174,18 +175,18 @@ int assemble_file(std::istream &in, std::FILE *obj, bool emit, std::ostream *lst
             ++pc;
         } else if (instr->kind == OP_OFFSET) {
             if (operand.empty()) {
-                std::cerr << in_name << ":" << lineno << ": error: missing operand for '" << tok << "'\n";
+                cerr << in_name << ":" << lineno << ": error: missing operand for '" << tok << "'\n";
                 ++errors;
                 ++pc;
                 continue;
             }
             if (!emit) {
-                if (std::isalpha((unsigned char)operand[0]) || operand[0]=='_') symtab_ref(operand);
+                if (isalpha((unsigned char)operand[0]) || operand[0]=='_') symtab_ref(operand);
             } else {
-                if (std::isalpha((unsigned char)operand[0]) || operand[0]=='_') {
+                if (isalpha((unsigned char)operand[0]) || operand[0]=='_') {
                     auto target_opt = symtab_lookup(operand);
                     if (!target_opt) {
-                        std::cerr << in_name << ":" << lineno << ": error: undefined label '" << operand << "'\n";
+                        cerr << in_name << ":" << lineno << ": error: undefined label '" << operand << "'\n";
                         ++errors;
                         int offset = 0;
                         unsigned op24 = static_cast<unsigned>(offset & 0xFFFFFF);
@@ -202,7 +203,7 @@ int assemble_file(std::istream &in, std::FILE *obj, bool emit, std::ostream *lst
                 } else {
                     auto num_opt = parse_number(operand);
                     if (!num_opt) {
-                        std::cerr << in_name << ":" << lineno << ": error: bad number '" << operand << "'\n";
+                        cerr << in_name << ":" << lineno << ": error: bad number '" << operand << "'\n";
                         ++errors;
                         int num = 0;
                         unsigned op24 = static_cast<unsigned>(num & 0xFFFFFF);
@@ -228,15 +229,15 @@ int assemble_file(std::istream &in, std::FILE *obj, bool emit, std::ostream *lst
     if (emit && lst) {
         // Print listing. We will sort listing entries by address (they should already be in order).
         for (const auto &e : listing) {
-            std::ostringstream os;
-            os << std::setw(8) << std::setfill('0') << std::hex << std::uppercase << e.addr;
+            ostringstream os;
+            os << setw(8) << setfill('0') << hex << uppercase << e.addr;
             *lst << os.str() << " ";
             os.str(""); os.clear();
-            os << std::setw(8) << std::setfill('0') << std::hex << std::uppercase << e.word;
+            os << setw(8) << setfill('0') << hex << uppercase << e.word;
             *lst << os.str();
             if (!e.mnemonic.empty()) *lst << " " << e.mnemonic;
             if (!e.operand.empty()) *lst << " " << e.operand;
-            *lst << std::dec << "\n";
+            *lst << dec << "\n";
         }
     }
 
@@ -245,41 +246,41 @@ int assemble_file(std::istream &in, std::FILE *obj, bool emit, std::ostream *lst
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        std::cerr << "Usage: asm <input.asm> [-o out.obj] [-l out.lst]\n";
+        cerr << "Usage: asm <input.asm> [-o out.obj] [-l out.lst]\n";
         return 1;
     }
-    std::string infile = argv[1];
-    std::string objname = "out.obj";
-    std::string lstname = "out.lst";
+    string infile = argv[1];
+    string objname = "out.obj";
+    string lstname = "out.lst";
 
     for (int i = 2; i < argc; ++i) {
-        if (std::string(argv[i]) == "-o" && i + 1 < argc) objname = argv[++i];
-        else if (std::string(argv[i]) == "-l" && i + 1 < argc) lstname = argv[++i];
-        else { std::cerr << "Unknown option '" << argv[i] << "'\n"; return 1; }
+        if (string(argv[i]) == "-o" && i + 1 < argc) objname = argv[++i];
+        else if (string(argv[i]) == "-l" && i + 1 < argc) lstname = argv[++i];
+        else { cerr << "Unknown option '" << argv[i] << "'\n"; return 1; }
     }
 
-    std::ifstream in(infile);
-    if (!in) { std::perror(("fopen " + infile).c_str()); return 1; }
+    ifstream in(infile);
+    if (!in) { perror(("fopen " + infile).c_str()); return 1; }
 
     instr_table_init();
     symtab_init();
 
     // PASS 1
     if (assemble_file(in, nullptr, false, nullptr, infile) != 0) {
-        std::cerr << "Pass 1 failed (errors)\n";
+        cerr << "Pass 1 failed (errors)\n";
         return 1;
     }
 
     // open binary and listing
-    std::FILE *obj = std::fopen(objname.c_str(), "wb");
-    if (!obj) { std::perror(("fopen " + objname).c_str()); return 1; }
-    std::ofstream lst(lstname);
-    if (!lst) { std::perror(("fopen " + lstname).c_str()); std::fclose(obj); return 1; }
+    FILE *obj = fopen(objname.c_str(), "wb");
+    if (!obj) { perror(("fopen " + objname).c_str()); return 1; }
+    ofstream lst(lstname);
+    if (!lst) { perror(("fopen " + lstname).c_str()); fclose(obj); return 1; }
 
     listing.clear();
     if (assemble_file(in, obj, true, &lst, infile) != 0) {
-        std::cerr << "Pass 2 failed (errors)\n";
-        std::fclose(obj);
+        cerr << "Pass 2 failed (errors)\n";
+        fclose(obj);
         return 1;
     }
 
@@ -287,11 +288,11 @@ int main(int argc, char **argv) {
     auto all = symtab_all();
     for (const auto &p : all) {
         if (p.second.defined && !p.second.referenced) {
-            std::cout << "Warning: label '" << p.first << "' defined but not referenced\n";
+            cout << "Warning: label '" << p.first << "' defined but not referenced\n";
         }
     }
 
-    std::fclose(obj);
-    std::cout << "Assembled " << infile << " -> " << objname << ", listing " << lstname << "\n";
+    fclose(obj);
+    cout << "Assembled " << infile << " -> " << objname << ", listing " << lstname << "\n";
     return 0;
 }

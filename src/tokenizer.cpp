@@ -1,16 +1,17 @@
 #include "tokenizer.hpp"
 #include <cctype>
+using namespace std;
 
-static std::string trim_right(const std::string &s) {
+static string trim_right(const string &s) {
     size_t n = s.size();
     while (n > 0 && (s[n-1] == '\n' || s[n-1] == '\r' || s[n-1] == ' ' || s[n-1] == '\t')) --n;
     return s.substr(0, n);
 }
 
-bool process_line(const std::string &line, std::string &label_out, std::string &stmt_out) {
-    std::string buf = line;
+bool process_line(const string &line, string &label_out, string &stmt_out) {
+    string buf = line;
     size_t sc = buf.find(';');
-    if (sc != std::string::npos) buf = buf.substr(0, sc);
+    if (sc != string::npos) buf = buf.substr(0, sc);
     buf = trim_right(buf);
     size_t i = 0;
     while (i < buf.size() && isspace((unsigned char)buf[i])) ++i;
@@ -35,7 +36,7 @@ bool process_line(const std::string &line, std::string &label_out, std::string &
     return true;
 }
 
-std::string parse_token(const std::string &s, size_t &pos) {
+string parse_token(const string &s, size_t &pos) {
     size_t n = s.size();
     while (pos < n && isspace((unsigned char)s[pos])) ++pos;
     if (pos >= n) return "";

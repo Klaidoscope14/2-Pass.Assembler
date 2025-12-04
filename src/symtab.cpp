@@ -1,13 +1,14 @@
 #include "symtab.hpp"
 #include <algorithm>
+using namespace std;
 
-static std::unordered_map<std::string, Symbol> table;
+static unordered_map<string, Symbol> table;
 
 void symtab_init() {
     table.clear();
 }
 
-bool symtab_insert(const std::string &name, int value, bool defined) {
+bool symtab_insert(const string &name, int value, bool defined) {
     auto it = table.find(name);
     if (it != table.end()) {
         if (defined && it->second.defined) {
@@ -23,18 +24,18 @@ bool symtab_insert(const std::string &name, int value, bool defined) {
     return false;
 }
 
-bool symtab_defined(const std::string &name) {
+bool symtab_defined(const string &name) {
     auto it = table.find(name);
     return (it != table.end()) && it->second.defined;
 }
 
-std::optional<int> symtab_lookup(const std::string &name) {
+optional<int> symtab_lookup(const string &name) {
     auto it = table.find(name);
-    if (it == table.end()) return std::nullopt;
+    if (it == table.end()) return nullopt;
     return it->second.value;
 }
 
-void symtab_ref(const std::string &name) {
+void symtab_ref(const string &name) {
     auto it = table.find(name);
     if (it == table.end()) {
         Symbol s;
@@ -45,11 +46,11 @@ void symtab_ref(const std::string &name) {
     }
 }
 
-std::vector<std::pair<std::string, Symbol>> symtab_all() {
-    std::vector<std::pair<std::string, Symbol>> out;
+vector<pair<string, Symbol>> symtab_all() {
+    vector<pair<string, Symbol>> out;
     out.reserve(table.size());
     for (auto &kv : table) out.emplace_back(kv);
-    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b){ return a.first < b.first; });
+    sort(out.begin(), out.end(), [](const auto &a, const auto &b){ return a.first < b.first; });
     return out;
 }
 
