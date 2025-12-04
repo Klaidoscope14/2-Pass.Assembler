@@ -34,5 +34,6 @@ const InstrDef* lookup_instr(const string &mnemonic) {
     for (size_t i = 0; i < instrs.size(); ++i) {
         if (instrs[i].name == mnemonic) return &instrs[i];
     }
+    
     return nullptr;
 }

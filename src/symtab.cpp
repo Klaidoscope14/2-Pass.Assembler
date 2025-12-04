@@ -14,10 +14,12 @@ bool symtab_insert(const string &name, int value, bool defined) {
         if (defined && it->second.defined) {
             return true;
         }
+
         if (defined) {
             it->second.value = value;
             it->second.defined = true;
         }
+
         return false;
     }
     table.emplace(name, Symbol(value, defined));
@@ -41,7 +43,9 @@ void symtab_ref(const string &name) {
         Symbol s;
         s.referenced = true;
         table.emplace(name, s);
-    } else {
+    } 
+    
+    else {
         it->second.referenced = true;
     }
 }
@@ -50,7 +54,10 @@ vector<pair<string, Symbol>> symtab_all() {
     vector<pair<string, Symbol>> out;
     out.reserve(table.size());
     for (auto &kv : table) out.emplace_back(kv);
-    sort(out.begin(), out.end(), [](const auto &a, const auto &b){ return a.first < b.first; });
+    
+    sort(out.begin(), out.end(), [](const auto &a, const auto &b){ 
+        return a.first < b.first; 
+    });
     return out;
 }
 

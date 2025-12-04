@@ -40,7 +40,7 @@ int assemble_file(istream &in, FILE *obj, bool emit, ostream *lst, const string 
     int errors = 0;
 
     while (getline(in, line)) {
-        ++lineno;
+        lineno++;
         string label, stmt;
         if (!process_line(line, label, stmt)) continue;
         if (!label.empty()) {
@@ -50,43 +50,50 @@ int assemble_file(istream &in, FILE *obj, bool emit, ostream *lst, const string 
                     cerr << in_name << ":" << lineno << ": error: duplicate label '" << label << "'\n";
                     ++errors;
                 }
-            } else {
-                // nothing here; labels already recorded in pass1
-            }
+            } 
+            
+            else {}
         }
 
-        // parse statement
         size_t pos = 0;
         string tok = parse_token(stmt, pos);
         if (tok.empty()) continue;
-        // uppercase mnemonic? spec uses case-insensitive for HALT maybe; keep case-sensitive for mnemonics except SET/HALT? We'll treat as exact except check "SET" as case-insensitive later
+        /* uppercase mnemonic? spec uses case-insensitive for HALT maybe; keep case-sensitive for mnemonics except SET/HALT? */
+        /* We'll treat as exact except check "SET" as case-insensitive later */
         if (tok == "SET" || tok == "set" || tok == "Set") {
             string op = parse_token(stmt, pos);
             if (op.empty()) {
                 cerr << in_name << ":" << lineno << ": error: SET missing operand\n";
                 ++errors;
-            } else {
+            } 
+            
+            else {
                 auto val = parse_number(op);
                 if (!val) {
                     cerr << in_name << ":" << lineno << ": error: bad number for SET: " << op << "\n";
                     ++errors;
-                } else {
+                } 
+                
+                else {
                     if (!emit) {
                         if (!label.empty()) {
                             symtab_insert(label, *val, true);
-                        } else {
+                        } 
+                        
+                        else {
                             cerr << in_name << ":" << lineno << ": warning: SET without label ignored\n";
                         }
                     }
                 }
             }
+
             continue;
         }
 
         const InstrDef *instr = lookup_instr(tok);
         if (!instr) {
             cerr << in_name << ":" << lineno << ": error: unknown mnemonic '" << tok << "'\n";
-            ++errors;
+            errors++;
             continue;
         }
 
@@ -94,55 +101,66 @@ int assemble_file(istream &in, FILE *obj, bool emit, ostream *lst, const string 
         string extra = parse_token(stmt, pos);
         if (!extra.empty()) {
             cerr << in_name << ":" << lineno << ": error: extra tokens at end of line\n";
-            ++errors;
+            errors++;
         }
 
         if (instr->kind == OP_NONE) {
             if (!operand.empty()) {
                 cerr << in_name << ":" << lineno << ": error: unexpected operand for '" << tok << "'\n";
-                ++errors;
+                errors++;
             }
+
             if (emit) {
                 unsigned word = static_cast<unsigned>(instr->opcode & 0xFF);
                 add_listing(pc, word, tok, "");
                 write_word_be(obj, word);
             }
-            ++pc;
-        } else if (instr->kind == OP_VALUE || instr->kind == OP_ANY || instr->opcode == -1) {
+
+            pc++;
+        } 
+        
+        else if (instr->kind == OP_VALUE || instr->kind == OP_ANY || instr->opcode == -1) {
             if (operand.empty()) {
                 cerr << in_name << ":" << lineno << ": error: missing operand for '" << tok << "'\n";
-                ++errors;
-                ++pc;
+                errors++;
+                pc++;
                 continue;
             }
-            // label?
+
             if (isalpha((unsigned char)operand[0]) || operand[0]=='_') {
                 if (!emit) {
                     symtab_ref(operand);
-                } else {
+                } 
+                
+                else {
                     auto val_opt = symtab_lookup(operand);
                     if (!val_opt) {
                         cerr << in_name << ":" << lineno << ": error: undefined label '" << operand << "'\n";
-                        ++errors;
-                        // fallback to zero
+                        errors++;
                         int val = 0;
                         if (instr->opcode == -1) {
                             unsigned word = static_cast<unsigned>(val);
                             add_listing(pc, word, "data", operand);
                             write_word_be(obj, word);
-                        } else {
+                        } 
+                        
+                        else {
                             unsigned op24 = static_cast<unsigned>(val & 0xFFFFFF);
                             unsigned word = ((op24 << 8) & 0xFFFFFF00u) | static_cast<unsigned>(instr->opcode & 0xFF);
                             add_listing(pc, word, tok, operand);
                             write_word_be(obj, word);
                         }
-                    } else {
+                    } 
+                    
+                    else {
                         int val = *val_opt;
                         if (instr->opcode == -1) {
                             unsigned word = static_cast<unsigned>(val);
                             add_listing(pc, word, "data", operand);
                             write_word_be(obj, word);
-                        } else {
+                        } 
+                        
+                        else {
                             unsigned op24 = static_cast<unsigned>(val & 0xFFFFFF);
                             unsigned word = ((op24 << 8) & 0xFFFFFF00u) | static_cast<unsigned>(instr->opcode & 0xFF);
                             add_listing(pc, word, tok, operand);
@@ -150,21 +168,26 @@ int assemble_file(istream &in, FILE *obj, bool emit, ostream *lst, const string 
                         }
                     }
                 }
-            } else {
+            } 
+            
+            else {
                 auto num_opt = parse_number(operand);
                 if (!num_opt) {
                     cerr << in_name << ":" << lineno << ": error: bad number '" << operand << "'\n";
-                    ++errors;
-                    ++pc;
+                    errors++;
+                    pc++;
                     continue;
                 }
+
                 int num = *num_opt;
                 if (emit) {
                     if (instr->opcode == -1) {
                         unsigned word = static_cast<unsigned>(num);
                         add_listing(pc, word, "data", operand);
                         write_word_be(obj, word);
-                    } else {
+                    } 
+                    
+                    else {
                         unsigned op24 = static_cast<unsigned>(num & 0xFFFFFF);
                         unsigned word = ((op24 << 8) & 0xFFFFFF00u) | static_cast<unsigned>(instr->opcode & 0xFF);
                         add_listing(pc, word, tok, operand);
@@ -172,45 +195,56 @@ int assemble_file(istream &in, FILE *obj, bool emit, ostream *lst, const string 
                     }
                 }
             }
-            ++pc;
-        } else if (instr->kind == OP_OFFSET) {
+            pc++;
+        } 
+        
+        else if (instr->kind == OP_OFFSET) {
             if (operand.empty()) {
                 cerr << in_name << ":" << lineno << ": error: missing operand for '" << tok << "'\n";
-                ++errors;
-                ++pc;
+                errors++;
+                pc++;
                 continue;
             }
+
             if (!emit) {
                 if (isalpha((unsigned char)operand[0]) || operand[0]=='_') symtab_ref(operand);
-            } else {
+            } 
+            
+            else {
                 if (isalpha((unsigned char)operand[0]) || operand[0]=='_') {
                     auto target_opt = symtab_lookup(operand);
                     if (!target_opt) {
                         cerr << in_name << ":" << lineno << ": error: undefined label '" << operand << "'\n";
-                        ++errors;
+                        errors++;
                         int offset = 0;
                         unsigned op24 = static_cast<unsigned>(offset & 0xFFFFFF);
                         unsigned word = ((op24 << 8) & 0xFFFFFF00u) | static_cast<unsigned>(instr->opcode & 0xFF);
                         add_listing(pc, word, tok, operand);
                         write_word_be(obj, word);
-                    } else {
+                    } 
+                    
+                    else {
                         int offset = compute_offset_for_branch(static_cast<int>(pc), *target_opt);
                         unsigned op24 = static_cast<unsigned>(offset & 0xFFFFFF);
                         unsigned word = ((op24 << 8) & 0xFFFFFF00u) | static_cast<unsigned>(instr->opcode & 0xFF);
                         add_listing(pc, word, tok, operand);
                         write_word_be(obj, word);
                     }
-                } else {
+                } 
+                
+                else {
                     auto num_opt = parse_number(operand);
                     if (!num_opt) {
                         cerr << in_name << ":" << lineno << ": error: bad number '" << operand << "'\n";
-                        ++errors;
+                        errors++;
                         int num = 0;
                         unsigned op24 = static_cast<unsigned>(num & 0xFFFFFF);
                         unsigned word = ((op24 << 8) & 0xFFFFFF00u) | static_cast<unsigned>(instr->opcode & 0xFF);
                         add_listing(pc, word, tok, operand);
                         write_word_be(obj, word);
-                    } else {
+                    } 
+                    
+                    else {
                         int num = *num_opt;
                         unsigned op24 = static_cast<unsigned>(num & 0xFFFFFF);
                         unsigned word = ((op24 << 8) & 0xFFFFFF00u) | static_cast<unsigned>(instr->opcode & 0xFF);
@@ -219,10 +253,10 @@ int assemble_file(istream &in, FILE *obj, bool emit, ostream *lst, const string 
                     }
                 }
             }
-            ++pc;
-        } else {
-            // unreachable
-        }
+            pc++;
+        } 
+        
+        else {}
     }
 
     // pass done
@@ -232,11 +266,15 @@ int assemble_file(istream &in, FILE *obj, bool emit, ostream *lst, const string 
             ostringstream os;
             os << setw(8) << setfill('0') << hex << uppercase << e.addr;
             *lst << os.str() << " ";
+
             os.str(""); os.clear();
             os << setw(8) << setfill('0') << hex << uppercase << e.word;
+
             *lst << os.str();
+
             if (!e.mnemonic.empty()) *lst << " " << e.mnemonic;
             if (!e.operand.empty()) *lst << " " << e.operand;
+
             *lst << dec << "\n";
         }
     }
@@ -249,14 +287,17 @@ int main(int argc, char **argv) {
         cerr << "Usage: asm <input.asm> [-o out.obj] [-l out.lst]\n";
         return 1;
     }
+
     string infile = argv[1];
     string objname = "out.obj";
     string lstname = "out.lst";
 
-    for (int i = 2; i < argc; ++i) {
-        if (string(argv[i]) == "-o" && i + 1 < argc) objname = argv[++i];
-        else if (string(argv[i]) == "-l" && i + 1 < argc) lstname = argv[++i];
-        else { cerr << "Unknown option '" << argv[i] << "'\n"; return 1; }
+    for (int i = 2; i < argc; i++) {
+        if (string(argv[i]) == "-o" && i + 1 < argc) objname = argv[i++];
+
+        else if (string(argv[i]) == "-l" && i + 1 < argc) lstname = argv[i++];
+
+        else cerr << "Unknown option '" << argv[i] << "'\n"; return 1; 
     }
 
     ifstream in(infile);
@@ -273,9 +314,17 @@ int main(int argc, char **argv) {
 
     // open binary and listing
     FILE *obj = fopen(objname.c_str(), "wb");
-    if (!obj) { perror(("fopen " + objname).c_str()); return 1; }
+    if (!obj) { 
+        perror(("fopen " + objname).c_str()); 
+        return 1;
+    }
+
     ofstream lst(lstname);
-    if (!lst) { perror(("fopen " + lstname).c_str()); fclose(obj); return 1; }
+    if (!lst) { 
+        perror(("fopen " + lstname).c_str()); 
+        fclose(obj); 
+        return 1; 
+    }
 
     listing.clear();
     if (assemble_file(in, obj, true, &lst, infile) != 0) {
@@ -284,7 +333,6 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    // warnings: unused labels
     auto all = symtab_all();
     for (const auto &p : all) {
         if (p.second.defined && !p.second.referenced) {

@@ -16,7 +16,7 @@ struct Symbol {
 };
 
 void symtab_init();
-bool symtab_insert(const string &name, int value, bool defined); // returns false on success, true on duplicate def
+bool symtab_insert(const string &name, int value, bool defined); // returns false on success, true on duplicate 
 bool symtab_defined(const string &name);
 optional<int> symtab_lookup(const string &name);
 void symtab_ref(const string &name);

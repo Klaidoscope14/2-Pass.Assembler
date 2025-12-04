@@ -8,7 +8,12 @@ using namespace std;
 const int MAX_LINE = 512;
 const int MAX_TOKEN = 128;
 
-enum OperandKind { OP_NONE, OP_VALUE, OP_OFFSET, OP_ANY };
+enum OperandKind { 
+    OP_NONE, 
+    OP_VALUE, 
+    OP_OFFSET, 
+    OP_ANY 
+};
 
 struct InstrDef {
     string name;
